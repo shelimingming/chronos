@@ -47,7 +47,9 @@ export default {
       // 微信公众号的appid，来源:登录微信公众号（https://mp.weixin.qq.com）-> 设置与开发 -> 基本配置 -> 公众号开发信息 -> AppID
       h5: 'xxxxxx',
       // 微信开放平台的appid，来源:登录微信开放平台（https://open.weixin.qq.com） -> 管理中心 -> 网站应用 -> 选择对应的应用名称，点击查看 -> AppID
-      web: 'xxxxxx'
+      web: 'xxxxxx',
+      // 微信小程序appid，与uni-config-center中的配置保持一致
+      mp: 'wx91e250891f2dec60'
     }
   },
   /**
