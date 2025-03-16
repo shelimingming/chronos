@@ -5,7 +5,7 @@ export default {
 		登录类型 未列举到的或运行环境不支持的，将被自动隐藏。
 		如果需要在不同平台有不同的配置，直接用条件编译即可
 	*/
-  isAdmin: false, // 区分管理端与用户端
+  isAdmin: true, // 区分管理端与用户端
   loginTypes: [
     // "qq",
     // "xiaomi",
@@ -58,7 +58,7 @@ export default {
 	 * weak（弱：密码必须包含字母和数字，长度范围：6-16位之间）
 	 * 为空或false则不验证密码强度
 	 */
-  passwordStrength: 'medium',
+  passwordStrength: 'weak',
   /**
 	 * 登录后允许用户设置密码（只针对未设置密码得用户）
 	 * 开启此功能将 setPasswordAfterLogin 设置为 true 即可
