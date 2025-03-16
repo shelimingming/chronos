@@ -5,6 +5,24 @@
 			"style": {
 				"navigationBarTitleText": "uni-app"
 			}
+		},
+		{
+			"path": "pages/statistics/index",
+			"style": {
+				"navigationBarTitleText": "统计"
+			}
+		},
+		{
+			"path": "pages/planning/index",
+			"style": {
+				"navigationBarTitleText": "计划"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
 		}
 	,{
     "path": "uni_modules/uni-id-pages/pages/register/register",
@@ -110,9 +128,40 @@
 ],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
+		"navigationBarTitleText": "时间管理大师",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#3cc51f",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [{
+				"pagePath": "pages/index/index",
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home-active.png",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/statistics/index",
+				"iconPath": "static/tabbar/statistics.png",
+				"selectedIconPath": "static/tabbar/statistics-active.png",
+				"text": "统计"
+			},
+			{
+				"pagePath": "pages/planning/index",
+				"iconPath": "static/tabbar/planning.png",
+				"selectedIconPath": "static/tabbar/planning-active.png",
+				"text": "计划"
+			},
+			{
+				"pagePath": "pages/profile/index",
+				"iconPath": "static/tabbar/profile.png",
+				"selectedIconPath": "static/tabbar/profile-active.png",
+				"text": "我的"
+			}
+		]
 	},
 	"uniIdRouter": {
 		"loginPage": "uni_modules/uni-id-pages/pages/login/login-withoutpwd",
