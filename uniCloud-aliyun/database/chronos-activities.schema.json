@@ -1,0 +1,76 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": "doc.user_id == auth.uid",
+		"create": "auth.uid != null",
+		"update": "doc.user_id == auth.uid",
+		"delete": "doc.user_id == auth.uid"
+	},
+	"properties": {
+		"_id": {
+			"description": "存储文档 ID（活动记录 ID），系统自动生成"
+		},
+		"user_id": {
+			"bsonType": "string",
+			"description": "用户ID，关联uni-id-users表",
+			"foreignKey": "uni-id-users._id",
+			"forceDefaultValue": {
+				"$env": "uid"
+			},
+			"title": "用户ID"
+		},
+		"title": {
+			"bsonType": "string",
+			"description": "活动名称",
+			"title": "活动名称",
+			"trim": "both"
+		},
+		"category": {
+			"bsonType": "string",
+			"description": "活动类别，关联chronos-categories表",
+			"foreignKey": "chronos-categories._id",
+			"title": "活动类别"
+		},
+		"tags": {
+			"bsonType": "array",
+			"description": "活动标签",
+			"title": "标签"
+		},
+		"start_time": {
+			"bsonType": "timestamp",
+			"description": "活动开始时间",
+			"title": "开始时间"
+		},
+		"end_time": {
+			"bsonType": "timestamp",
+			"description": "活动结束时间",
+			"title": "结束时间"
+		},
+		"duration": {
+			"bsonType": "int",
+			"description": "活动持续时间(分钟)",
+			"title": "持续时间"
+		},
+		"notes": {
+			"bsonType": "string",
+			"description": "活动备注",
+			"title": "备注",
+			"trim": "both"
+		},
+		"created_at": {
+			"bsonType": "timestamp",
+			"description": "创建时间",
+			"forceDefaultValue": {
+				"$env": "now"
+			}
+		},
+		"updated_at": {
+			"bsonType": "timestamp",
+			"description": "更新时间",
+			"forceDefaultValue": {
+				"$env": "now"
+			}
+		}
+	},
+	"required": ["user_id", "title", "category", "start_time", "end_time", "duration"]
+}

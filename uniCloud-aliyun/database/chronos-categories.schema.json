@@ -1,0 +1,56 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": "doc.user_id == auth.uid || doc.user_id == '0'",
+		"create": true,
+		"update": "doc.user_id == auth.uid",
+		"delete": "doc.user_id == auth.uid"
+	},
+	"properties": {
+		"_id": {
+			"description": "存储文档 ID（类别 ID），系统自动生成"
+		},
+		"user_id": {
+			"bsonType": "string",
+			"description": "用户ID，关联uni-id-users表",
+			"foreignKey": "uni-id-users._id",
+			"forceDefaultValue": {
+				"$env": "uid"
+			},
+			"title": "用户ID"
+		},
+		"name": {
+			"bsonType": "string",
+			"description": "类别名称",
+			"title": "类别名称",
+			"trim": "both"
+		},
+		"color": {
+			"bsonType": "string",
+			"description": "显示颜色，十六进制颜色代码",
+			"title": "显示颜色",
+			"trim": "both"
+		},
+		"icon": {
+			"bsonType": "string",
+			"description": "类别图标",
+			"title": "图标",
+			"trim": "both"
+		},
+		"created_at": {
+			"bsonType": "timestamp",
+			"description": "创建时间",
+			"forceDefaultValue": {
+				"$env": "now"
+			}
+		},
+		"updated_at": {
+			"bsonType": "timestamp",
+			"description": "更新时间",
+			"forceDefaultValue": {
+				"$env": "now"
+			}
+		}
+	},
+	"required": ["user_id", "name", "color"]
+}

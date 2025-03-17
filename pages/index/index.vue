@@ -1,93 +1,295 @@
 <template>
-	<view class="content">
-		<image class="logo" src="/static/logo.png"></image>
-		<view class="text-area">
-			<text class="title">{{title}}</text>
+	<view class="container">
+		<!-- 日期选择器 -->
+		<view class="date-selector">
+			<view class="date-arrow" @click="changeDate(-1)"><text class="arrow-text">◀</text></view>
+			<view class="current-date">{{ formatDate(currentDate) }}</view>
+			<view class="date-arrow" @click="changeDate(1)"><text class="arrow-text">▶</text></view>
 		</view>
 		
-		<view class="button-group">
-			<button type="primary" class="login-btn" @click="toLoginPage">登录</button>
-			<button type="default" class="userinfo-btn" @click="toUserinfoPage">个人中心</button>
+		<!-- 时间轴视图 -->
+		<scroll-view scroll-y class="timeline-container">
+			<view v-for="hour in hours" :key="hour" class="timeline-hour">
+				<view class="hour-label">{{ hour }}:00</view>
+				<view class="hour-content">
+					<!-- 显示该小时内的活动 -->
+					<view 
+						v-for="activity in getActivitiesByHour(hour)" 
+						:key="activity._id"
+						class="activity-item"
+						:style="{
+							backgroundColor: activity.categoryColor || '#a0c4ff',
+							height: calculateActivityHeight(activity) + 'px',
+							top: calculateActivityTop(activity, hour) + 'px',
+							left: '0',
+							width: '100%'
+						}"
+					>
+						<view class="activity-marker"></view>
+						<text class="activity-title">{{ activity.title }}</text>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+		
+		<!-- 添加活动按钮 -->
+		<view class="add-button" @click="addActivity">
+			<text class="add-icon">+</text>
 		</view>
 	</view>
 </template>
 
 <script>
-	import { store } from '@/uni_modules/uni-id-pages/common/store.js'
 	export default {
 		data() {
 			return {
-				title: 'Chronos 时间管理大师',
-				userInfo: {}
-			}
-		},
-		computed: {
-			hasLogin() {
-				return store.hasLogin
-			}
+				currentDate: new Date(),
+				hours: Array.from({length: 24}, (_, i) => i),
+				activities: [],
+				categories: []
+			};
 		},
 		onLoad() {
-			this.userInfo = store.userInfo
+			this.loadCategories();
+			this.loadActivities();
+		},
+		onShow() {
+			// 每次页面显示时重新加载活动数据
+			this.loadActivities();
 		},
 		methods: {
-			toLoginPage() {
-				uni.navigateTo({
-					url: '/uni_modules/uni-id-pages/pages/login/login-withoutpwd'
-				})
-			},
-			toUserinfoPage() {
-				if (!this.hasLogin) {
+			// 加载活动类别
+			async loadCategories() {
+				try {
+					const db = uniCloud.database();
+					const categoriesCollection = db.collection('chronos-categories');
+					const res = await categoriesCollection.get();
+					this.categories = res.result.data || [];
+				} catch (e) {
+					console.error('加载类别失败:', e);
 					uni.showToast({
-						title: '请先登录',
+						title: '加载类别失败',
 						icon: 'none'
-					})
-					setTimeout(() => {
-						this.toLoginPage()
-					}, 1500)
-					return
+					});
 				}
+			},
+			
+			// 加载活动数据
+			async loadActivities() {
+				try {
+					const db = uniCloud.database();
+					const activitiesCollection = db.collection('chronos-activities');
+					
+					// 获取当天开始和结束时间
+					const startOfDay = new Date(this.currentDate);
+					startOfDay.setHours(0, 0, 0, 0);
+					
+					const endOfDay = new Date(this.currentDate);
+					endOfDay.setHours(23, 59, 59, 999);
+					
+					// 将Date对象转换为时间戳（毫秒数）
+					const startTimestamp = startOfDay.getTime();
+					const endTimestamp = endOfDay.getTime();
+					
+					// 查询当天的活动
+					const res = await activitiesCollection
+						.where({
+							start_time: db.command.gte(startTimestamp).and(db.command.lte(endTimestamp))
+						})
+						.orderBy('start_time', 'asc')
+						.get();
+					
+					let activities = res.result.data || [];
+					
+					// 为每个活动添加类别颜色
+					activities = activities.map(activity => {
+						const category = this.categories.find(c => c._id === activity.category);
+						return {
+							...activity,
+							categoryColor: category ? category.color : '#a0c4ff'
+						};
+					});
+					
+					this.activities = activities;
+				} catch (e) {
+					console.error('加载活动失败:', e);
+					uni.showToast({
+						title: '加载活动失败',
+						icon: 'none'
+					});
+				}
+			},
+			
+			// 根据小时获取活动
+			getActivitiesByHour(hour) {
+				return this.activities.filter(activity => {
+					const startHour = new Date(activity.start_time).getHours();
+					const endHour = new Date(activity.end_time).getHours();
+					
+					// 如果活动跨越多个小时，只要有部分在当前小时内就显示
+					return (startHour <= hour && endHour >= hour) || 
+						   (startHour === hour);
+				});
+			},
+			
+			// 计算活动在时间轴上的高度（基于持续时间）
+			calculateActivityHeight(activity) {
+				// 每分钟1px高度，最小高度为30px
+				return Math.max(activity.duration, 30);
+			},
+			
+			// 计算活动在时间轴上的位置
+			calculateActivityTop(activity, hour) {
+				const startTime = new Date(activity.start_time);
+				const startHour = startTime.getHours();
+				
+				if (startHour === hour) {
+					// 如果活动开始于当前小时，根据分钟计算位置
+					return startTime.getMinutes();
+				} else if (startHour < hour) {
+					// 如果活动开始于之前的小时，从当前小时的开始位置显示
+					return 0;
+				}
+				return 0;
+			},
+			
+			// 格式化日期为 YYYY年MM月DD日 星期X
+			formatDate(date) {
+				const year = date.getFullYear();
+				const month = date.getMonth() + 1;
+				const day = date.getDate();
+				const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+				const weekday = weekdays[date.getDay()];
+				
+				return `${year}年${month}月${day}日 星期${weekday}`;
+			},
+			
+			// 切换日期
+			changeDate(offset) {
+				const newDate = new Date(this.currentDate);
+				newDate.setDate(newDate.getDate() + offset);
+				this.currentDate = newDate;
+				this.loadActivities();
+			},
+			
+			// 添加新活动
+			addActivity() {
+				// 跳转到活动编辑页面
 				uni.navigateTo({
-					url: '/uni_modules/uni-id-pages/pages/userinfo/userinfo'
-				})
+					url: '/pages/activity/edit'
+				});
 			}
 		}
 	}
 </script>
 
 <style>
-	.content {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-	}
+.container {
+	padding: 0;
+	position: relative;
+	height: 100vh;
+	background-color: #f8f8f8;
+}
 
-	.logo {
-		height: 200rpx;
-		width: 200rpx;
-		margin-top: 200rpx;
-		margin-left: auto;
-		margin-right: auto;
-		margin-bottom: 50rpx;
-	}
+.date-selector {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px;
+	background-color: #ffffff;
+	border-bottom: 1px solid #eaeaea;
+}
 
-	.text-area {
-		display: flex;
-		justify-content: center;
-		margin-bottom: 50rpx;
-	}
+.date-arrow {
+	width: 30px;
+	height: 30px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 15px;
+	background-color: #f0f0f0;
+}
 
-	.title {
-		font-size: 36rpx;
-		color: #8f8f94;
-	}
-	
-	.button-group {
-		width: 80%;
-		margin-top: 50rpx;
-	}
-	
-	.login-btn, .userinfo-btn {
-		margin-bottom: 30rpx;
-	}
+.arrow-text {
+	font-size: 16px;
+	color: #333;
+}
+
+.current-date {
+	font-size: 16px;
+	font-weight: bold;
+	color: #333;
+}
+
+.timeline-container {
+	height: calc(100vh - 130px);
+	background-color: #ffffff;
+}
+
+.timeline-hour {
+	display: flex;
+	position: relative;
+	height: 60px;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.hour-label {
+	width: 60px;
+	padding: 10px;
+	text-align: center;
+	color: #666;
+	font-size: 14px;
+	border-right: 1px solid #f0f0f0;
+}
+
+.hour-content {
+	flex: 1;
+	position: relative;
+}
+
+.activity-item {
+	position: absolute;
+	border-radius: 4px;
+	padding: 5px 10px;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+}
+
+.activity-marker {
+	width: 4px;
+	height: 100%;
+	background-color: rgba(255, 255, 255, 0.7);
+	margin-right: 8px;
+}
+
+.activity-title {
+	color: #fff;
+	font-size: 14px;
+	font-weight: bold;
+	text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.add-button {
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	width: 50px;
+	height: 50px;
+	border-radius: 25px;
+	background-color: #007aff;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.add-icon {
+	color: #ffffff;
+	font-size: 24px;
+	font-weight: bold;
+}
 </style>

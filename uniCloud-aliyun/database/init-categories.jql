@@ -1,0 +1,51 @@
+// 初始化默认活动类别
+db.collection('chronos-categories').add([
+  {
+    "user_id": "0",
+    "name": "工作",
+    "color": "#FF4D4F",
+    "icon": "work",
+    "created_at": new Date(),
+    "updated_at": new Date()
+  },
+  {
+    "user_id": "0",
+    "name": "学习",
+    "color": "#40A9FF",
+    "icon": "education",
+    "created_at": new Date(),
+    "updated_at": new Date()
+  },
+  {
+    "user_id": "0",
+    "name": "休息",
+    "color": "#73D13D",
+    "icon": "rest",
+    "created_at": new Date(),
+    "updated_at": new Date()
+  },
+  {
+    "user_id": "0",
+    "name": "运动",
+    "color": "#FFA940",
+    "icon": "sports",
+    "created_at": new Date(),
+    "updated_at": new Date()
+  },
+  {
+    "user_id": "0",
+    "name": "娱乐",
+    "color": "#9254DE",
+    "icon": "entertainment",
+    "created_at": new Date(),
+    "updated_at": new Date()
+  },
+  {
+    "user_id": "0",
+    "name": "其他",
+    "color": "#8C8C8C",
+    "icon": "other",
+    "created_at": new Date(),
+    "updated_at": new Date()
+  }
+])

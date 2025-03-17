@@ -3,7 +3,13 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "时间管理大师"
+			}
+		},
+		{
+			"path": "pages/activity/edit",
+			"style": {
+				"navigationBarTitleText": "记录活动"
 			}
 		},
 		{
