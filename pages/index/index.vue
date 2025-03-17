@@ -17,6 +17,7 @@
 						v-for="activity in getActivitiesByHour(hour)" 
 						:key="activity._id"
 						class="activity-item"
+						@click.stop="editActivity(activity._id)"
 						:style="{
 							backgroundColor: activity.categoryColor || '#a0c4ff',
 							height: calculateActivityHeight(activity) + 'px',
@@ -50,12 +51,15 @@
 			};
 		},
 		onLoad() {
-			this.loadCategories();
-			this.loadActivities();
+			this.loadCategories().then(() => {
+				this.loadActivities();
+			});
 		},
 		onShow() {
 			// 每次页面显示时重新加载活动数据
-			this.loadActivities();
+			this.loadCategories().then(() => {
+				this.loadActivities();
+			});
 		},
 		methods: {
 			// 加载活动类别
@@ -178,6 +182,17 @@
 				uni.navigateTo({
 					url: '/pages/activity/edit'
 				});
+			},
+			// 编辑活动
+			editActivity(id) {
+				console.log('编辑活动被触发，活动ID:', id);
+				uni.navigateTo({
+					url: `/pages/activity/edit?id=${id}`
+				}).then(() => {
+					console.log('页面跳转成功');
+				}).catch(err => {
+					console.error('页面跳转失败:', err);
+				});
 			}
 		}
 	}
@@ -189,6 +204,10 @@
 	position: relative;
 	height: 100vh;
 	background-color: #f8f8f8;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	padding-bottom: var(--window-bottom); /* 适应底部安全区域 */
 }
 
 .date-selector {
@@ -222,24 +241,31 @@
 }
 
 .timeline-container {
-	height: calc(100vh - 130px);
+	height: calc(100vh - 130px - var(--window-bottom)); /* 减去顶部区域和底部安全区域 */
 	background-color: #ffffff;
+	flex: 1;
+	overflow: hidden;
 }
 
 .timeline-hour {
 	display: flex;
 	position: relative;
-	height: 60px;
+	height: calc((100vh - 130px - var(--window-bottom)) / 24); /* 动态计算每小时高度 */
+	min-height: 40px; /* 减小最小高度以适应小屏幕 */
 	border-bottom: 1px solid #f0f0f0;
+	flex-shrink: 0; /* 防止压缩 */
 }
 
 .hour-label {
-	width: 60px;
-	padding: 10px;
+	width: 50px;
+	padding: 5px;
 	text-align: center;
 	color: #666;
-	font-size: 14px;
+	font-size: 12px;
 	border-right: 1px solid #f0f0f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .hour-content {
@@ -265,18 +291,19 @@
 
 .activity-title {
 	color: #fff;
-	font-size: 14px;
+	font-size: 12px;
 	font-weight: bold;
 	text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	max-width: 100%;
 }
 
 .add-button {
 	position: fixed;
 	right: 20px;
-	bottom: 20px;
+	bottom: calc(var(--window-bottom) + 20px); /* 使用安全区域变量动态调整 */
 	width: 50px;
 	height: 50px;
 	border-radius: 25px;
@@ -285,6 +312,7 @@
 	justify-content: center;
 	align-items: center;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+	z-index: 999; /* 确保按钮在最上层 */
 }
 
 .add-icon {

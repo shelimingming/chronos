@@ -56,21 +56,83 @@
 <script>
 	export default {
 		data() {
+			// 获取当前时间并格式化为HH:mm格式
+			const now = new Date();
+			const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 			return {
+				activityId: '', // 添加活动ID
 				title: '',
-				startTime: '',
-				endTime: '',
+				startTime: currentTime,
+				endTime: currentTime,
 				duration: 0,
 				categories: [],
-				categoryIndex: -1,
+				categoryIndex: 0,
 				selectedCategory: null,
 				notes: ''
 			}
 		},
-		onLoad() {
+		onLoad(options) {
 			this.loadCategories();
+			// 如果传入了活动ID，加载活动数据
+			if (options && options.id) {
+				this.activityId = options.id; // 保存活动ID
+				this.loadActivity(options.id);
+			}
 		},
 		methods: {
+			// 加载活动数据
+			async loadActivity(id) {
+				try {
+					const db = uniCloud.database();
+					const activitiesCollection = db.collection('chronos-activities');
+					const res = await activitiesCollection.doc(id).get();
+					const activity = res.result.data;
+					
+					if (activity) {
+						this.title = activity.title;
+						// 使用本地时区处理时间
+						// 确保时间戳是有效的数字
+						const startTimestamp = typeof activity.start_time === 'object' && activity.start_time.$date ? 
+							activity.start_time.$date : Number(activity.start_time);
+						const endTimestamp = typeof activity.end_time === 'object' && activity.end_time.$date ? 
+							activity.end_time.$date : Number(activity.end_time);
+							
+						const startDate = new Date(startTimestamp);
+						const endDate = new Date(endTimestamp);
+						
+						// 检查日期是否有效
+						if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+							// 格式化时间为HH:mm格式
+							this.startTime = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`;
+							this.endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+						} else {
+							// 如果日期无效，使用当前时间
+							const now = new Date();
+							this.startTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+							this.endTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+							console.error('无效的日期格式', activity.start_time, activity.end_time);
+						}
+						
+						this.duration = activity.duration;
+						this.notes = activity.notes;
+						
+						// 设置选中的类别
+						const categoryIndex = this.categories.findIndex(c => c._id === activity.category);
+						if (categoryIndex !== -1) {
+							this.categoryIndex = categoryIndex;
+							this.selectedCategory = this.categories[categoryIndex];
+						}
+					}
+				}
+				catch (e) {
+					console.error('加载活动数据失败:', e);
+					uni.showToast({
+						title: '加载活动数据失败',
+						icon: 'none'
+					});
+				}
+			},
+			
 			// 加载活动类别
 			async loadCategories() {
 				try {
@@ -78,6 +140,11 @@
 					const categoriesCollection = db.collection('chronos-categories');
 					const res = await categoriesCollection.get();
 					this.categories = res.result.data || [];
+					// 如果有类别数据，自动选择第一个类别
+					if (this.categories.length > 0) {
+						this.categoryIndex = 0;
+						this.selectedCategory = this.categories[0];
+					}
 				} catch (e) {
 					console.error('加载类别失败:', e);
 					uni.showToast({
@@ -151,8 +218,13 @@
 					
 					// 构建当天的完整时间
 					const today = new Date();
-					const startTime = new Date(today.setHours(...this.startTime.split(':'), 0, 0));
-					const endTime = new Date(today.setHours(...this.endTime.split(':'), 0, 0));
+					const [startHours, startMinutes] = this.startTime.split(':').map(Number);
+					const [endHours, endMinutes] = this.endTime.split(':').map(Number);
+
+					// 使用本地时区创建时间
+					const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHours, startMinutes, 0);
+					const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHours, endMinutes, 0);
+					// 确保时间戳使用本地时区
 					
 					// 如果结束时间小于开始时间，认为是跨天，结束时间加一天
 					if (endTime < startTime) {
@@ -168,7 +240,11 @@
 						notes: this.notes
 					};
 					
-					await activitiesCollection.add(activity);
+					if (this.activityId) {
+						await activitiesCollection.doc(this.activityId).update(activity);
+					} else {
+						await activitiesCollection.add(activity);
+					}
 					
 					uni.showToast({
 						title: '保存成功',
@@ -180,11 +256,6 @@
 							}, 1500);
 						}
 					});
-					
-					// 移除重复的navigateBack调用
-					setTimeout(() => {
-						uni.navigateBack();
-					}, 1500);
 					
 				} catch (e) {
 					console.error('保存活动失败:', e);
